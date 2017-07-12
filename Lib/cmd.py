@@ -42,7 +42,9 @@ listings of documented functions, miscellaneous topics, and undocumented
 functions respectively.
 """
 
-import string, sys
+import string
+import sys
+import textwrap
 
 __all__ = ["Cmd"]
 
@@ -73,7 +75,7 @@ class Cmd:
     nohelp = "*** No help on %s"
     use_rawinput = 1
 
-    def __init__(self, completekey='tab', stdin=None, stdout=None):
+    def __init__(self, completekey='tab', stdin=None, stdout=None, teminal_width = 70):
         """Instantiate a line-oriented interpreter framework.
 
         The optional argument 'completekey' is the readline name of a
@@ -94,7 +96,25 @@ class Cmd:
             self.stdout = sys.stdout
         self.cmdqueue = []
         self.completekey = completekey
-
+        self.textwrap = textwrap.TextWrapper(width)
+    
+    def input(self, prompt=''):
+         if self.use_rawinput:
+            try:
+                line = input(prompt)
+                except EOFError:
+                    line = 'EOF'
+        else:
+            if prompt:
+                self.stdout.write(prompt)
+                self.stdout.flush()
+            line = self.stdin.readline()
+            if not line:
+                line = 'EOF'
+            else:
+                line = line.rstrip('\r\n')
+        return line
+    
     def cmdloop(self, intro=None):
         """Repeatedly issue a prompt, accept input, parse an initial prefix
         off the received input, and dispatch to action methods, passing them
@@ -115,25 +135,13 @@ class Cmd:
             if intro is not None:
                 self.intro = intro
             if self.intro:
-                self.stdout.write(str(self.intro)+"\n")
+                self.stdout.write(self.wraptext(self.intro))
             stop = None
             while not stop:
                 if self.cmdqueue:
                     line = self.cmdqueue.pop(0)
                 else:
-                    if self.use_rawinput:
-                        try:
-                            line = input(self.prompt)
-                        except EOFError:
-                            line = 'EOF'
-                    else:
-                        self.stdout.write(self.prompt)
-                        self.stdout.flush()
-                        line = self.stdin.readline()
-                        if not len(line):
-                            line = 'EOF'
-                        else:
-                            line = line.rstrip('\r\n')
+                    line = self.input(self.prompt)
                 line = self.precmd(line)
                 stop = self.onecmd(line)
                 stop = self.postcmd(stop, line)
@@ -299,7 +307,7 @@ class Cmd:
                 try:
                     doc=getattr(self, 'do_' + arg).__doc__
                     if doc:
-                        self.stdout.write("%s\n"%str(doc))
+                        self.stdout.write(self.textwrap.fill(doc)+'\n')
                         return
                 except AttributeError:
                     pass
