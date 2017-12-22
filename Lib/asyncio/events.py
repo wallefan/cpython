@@ -463,10 +463,10 @@ class AbstractEventLoop:
 
     # Completion based I/O methods returning Futures.
 
-    def sock_recv(self, sock, nbytes):
+    def sock_recv(self, sock, nbytes, flags=0):
         raise NotImplementedError
 
-    def sock_sendall(self, sock, data):
+    def sock_sendall(self, sock, data, flags=0):
         raise NotImplementedError
 
     def sock_connect(self, sock, address):
