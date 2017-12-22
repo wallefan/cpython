@@ -440,11 +440,11 @@ class BaseProactorEventLoop(base_events.BaseEventLoop):
         # Close the event loop
         super().close()
 
-    def sock_recv(self, sock, n):
-        return self._proactor.recv(sock, n)
+    def sock_recv(self, sock, n, flags=0):
+        return self._proactor.recv(sock, n, flags)
 
-    def sock_sendall(self, sock, data):
-        return self._proactor.send(sock, data)
+    def sock_sendall(self, sock, data, flags=0):
+        return self._proactor.send(sock, data, flags)
 
     def sock_connect(self, sock, address):
         return self._proactor.connect(sock, address)
