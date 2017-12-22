@@ -351,7 +351,7 @@ class BaseSelectorEventLoop(base_events.BaseEventLoop):
         self._ensure_fd_no_transport(fd)
         return self._remove_writer(fd)
 
-    def sock_recv(self, sock, n):
+    def sock_recv(self, sock, n, flags=0):
         """Receive data from the socket.
 
         The return value is a bytes object representing the data received.
@@ -363,10 +363,10 @@ class BaseSelectorEventLoop(base_events.BaseEventLoop):
         if self._debug and sock.gettimeout() != 0:
             raise ValueError("the socket must be non-blocking")
         fut = self.create_future()
-        self._sock_recv(fut, False, sock, n)
+        self._sock_recv(fut, False, sock, n, flags)
         return fut
 
-    def _sock_recv(self, fut, registered, sock, n):
+    def _sock_recv(self, fut, registered, sock, n, flags=0):
         # _sock_recv() can add itself as an I/O callback if the operation can't
         # be done immediately. Don't use it directly, call sock_recv().
         fd = sock.fileno()
@@ -379,15 +379,15 @@ class BaseSelectorEventLoop(base_events.BaseEventLoop):
         if fut.cancelled():
             return
         try:
-            data = sock.recv(n)
+            data = sock.recv(n, flags)
         except (BlockingIOError, InterruptedError):
-            self.add_reader(fd, self._sock_recv, fut, True, sock, n)
+            self.add_reader(fd, self._sock_recv, fut, True, sock, n, flags)
         except Exception as exc:
             fut.set_exception(exc)
         else:
             fut.set_result(data)
 
-    def sock_sendall(self, sock, data):
+    def sock_sendall(self, sock, data, flags=0):
         """Send data to the socket.
 
         The socket must be connected to a remote socket. This method continues
@@ -402,12 +402,12 @@ class BaseSelectorEventLoop(base_events.BaseEventLoop):
             raise ValueError("the socket must be non-blocking")
         fut = self.create_future()
         if data:
-            self._sock_sendall(fut, False, sock, data)
+            self._sock_sendall(fut, False, sock, data, flags)
         else:
             fut.set_result(None)
         return fut
 
-    def _sock_sendall(self, fut, registered, sock, data):
+    def _sock_sendall(self, fut, registered, sock, data, flags=0):
         fd = sock.fileno()
 
         if registered:
@@ -416,7 +416,7 @@ class BaseSelectorEventLoop(base_events.BaseEventLoop):
             return
 
         try:
-            n = sock.send(data)
+            n = sock.send(data, flags)
         except (BlockingIOError, InterruptedError):
             n = 0
         except Exception as exc:
